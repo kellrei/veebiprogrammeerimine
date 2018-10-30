@@ -3,6 +3,26 @@ require ("../../../config.php");
 $database = "if18_kelly_re_1";
 //echo $serverHost;
 
+function signup($firstName, $lastName, $birthDate, $gender, $email, $password){
+	$notice = "";
+	$mysqli = new mysqli($GLOBALS["serverHost"], $GLOBALS["serverUsername"], $GLOBALS["serverPassword"], $GLOBALS["database"]);
+	$stmt = $mysqli->prepare("INSERT INTO vpusers2 (firstname, lastname, birthdate, gender, email, password) VALUES(?,?,?,?,?,?)");
+	echo $mysqli->error;
+	//krüpteerime parooli
+	$options = ["cost"=>12, "salt"=>substr(sha1(mt_rand()), 0, 22)];
+	$pwdhash = password_hash($password, PASSWORD_BCRYPT, $options);
+	$stmt->bind_param("sssiss", $firstName, $lastName, $birthDate, $gender, $email, $pwdhash);
+	if($stmt->execute()){
+	  $notice = "Kasutaja loomine õnnestus!";
+	} else {
+	  $notice = "Kasutaja loomisel tekkis viga: " .$stmt->error;
+	}
+	
+	$stmt->close();
+	$mysqli->close();
+	return $notice;
+  }
+  
 function saveamsg($msg) {
 	$notice = "";
 	//loome andmebaasiühenduse
@@ -40,49 +60,7 @@ function saveamsg($msg) {
 		$mysqli->close();
 		return $notice;
 	}
-	function createAndFetchCats($catName, $catColor, $catTail){
-		$notice = null;
-		$cats = null;
-		$mysqli = new mysqli($GLOBALS["serverHost"], $GLOBALS["serverUsername"], $GLOBALS["serverPassword"], $GLOBALS["database"]);
-		
-		// Insert a cat
-		if ($catName != null and $catColor != null){ // Only if there is input
-			$stmt = $mysqli -> prepare("INSERT INTO kassid (nimi, v2rv, saba) VALUES(?, ?, ?)");
-			echo $mysqli->error;
-		
-			$stmt -> bind_param("ssi", $catName, $catColor, $catTail);
 	
-			if($stmt -> execute()){
-				$notice = 'Kass ' . $catName . ' on sisestatud!';
-			}
-			else {
-				$notice = 'Kassi sisestamisel esines tõrge: ' . $stmt -> error; // Never displayed, why?
-			}
-			$stmt -> close();
-		}
-		else { // Otherwise skip
-			$notice = "Kuvan tabelis olevaid kasse.";		
-		}
-		// Fetch the cats
-		$stmt = $mysqli -> prepare("SELECT nimi, v2rv, saba FROM kassid ORDER BY kiisu_id");
-		echo $mysqli->error;
-		
-		$stmt -> bind_result($readCatName, $readCatColor, $readCatTail);
-		if($stmt -> execute()){
-			// Do nothing if succeeded
-		}
-		else {
-			$notice = 'Kasside saamisel esines tõrge: ' . $stmt -> error; 
-		}
-		
-		while ($stmt -> fetch()){ // Too lazy for a 2-dimensional array, so separating with dashes
-			$cats .= "<li>" . $readCatName . " - " . $readCatColor . " - " . $readCatTail . "</li>";
-		}
-		
-		$stmt -> close();
-		$mysqli -> close();
-		return $cats . "|" . $notice; // Cannot return two variables properly
-	}
 //teksti sisendi kontrollimine
 function test_input($data) {
   $data = trim($data);
